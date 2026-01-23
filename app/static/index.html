@@ -1,408 +1,115 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>FontBench Web</title>
-    <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script>
-    <style>
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-        }
-
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, sans-serif;
-            background: #f5f5f5;
-            color: #333;
-            line-height: 1.6;
-        }
-
-        .container {
-            max-width: 1200px;
-            margin: 0 auto;
-            padding: 20px;
-        }
-
-        header {
-            background: #2c3e50;
-            color: white;
-            padding: 20px 0;
-            margin-bottom: 30px;
-        }
-
-        header h1 {
-            text-align: center;
-            font-weight: 300;
-        }
-
-        .upload-section {
-            background: white;
-            border-radius: 8px;
-            padding: 30px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 30px;
-        }
-
-        .upload-area {
-            border: 2px dashed #ccc;
-            border-radius: 8px;
-            padding: 40px;
-            text-align: center;
-            cursor: pointer;
-            transition: border-color 0.3s, background 0.3s;
-        }
-
-        .upload-area:hover {
-            border-color: #3498db;
-            background: #f8f9fa;
-        }
-
-        .upload-area.dragover {
-            border-color: #3498db;
-            background: #e8f4fc;
-        }
-
-        .upload-area input[type="file"] {
-            display: none;
-        }
-
-        .upload-area p {
-            margin-bottom: 10px;
-            color: #666;
-        }
-
-        .upload-area .file-types {
-            font-size: 0.9em;
-            color: #999;
-        }
-
-        #loading {
-            display: none;
-            text-align: center;
-            padding: 20px;
-        }
-
-        .spinner {
-            border: 4px solid #f3f3f3;
-            border-top: 4px solid #3498db;
-            border-radius: 50%;
-            width: 40px;
-            height: 40px;
-            animation: spin 1s linear infinite;
-            margin: 0 auto 10px;
-        }
-
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-
-        #results {
-            display: none;
-        }
-
-        .card {
-            background: white;
-            border-radius: 8px;
-            padding: 20px;
-            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            margin-bottom: 20px;
-        }
-
-        .card h2 {
-            color: #2c3e50;
-            margin-bottom: 15px;
-            padding-bottom: 10px;
-            border-bottom: 2px solid #eee;
-        }
-
-        .info-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-            gap: 15px;
-        }
-
-        .info-item {
-            padding: 10px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-
-        .info-item label {
-            display: block;
-            font-size: 0.85em;
-            color: #666;
-            margin-bottom: 4px;
-        }
-
-        .info-item span {
-            font-weight: 500;
-            color: #2c3e50;
-        }
-
-        .stats-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-            gap: 10px;
-        }
-
-        .stat-box {
-            text-align: center;
-            padding: 15px;
-            background: #f8f9fa;
-            border-radius: 4px;
-        }
-
-        .stat-box .value {
-            font-size: 1.5em;
-            font-weight: 600;
-            color: #3498db;
-        }
-
-        .stat-box .label {
-            font-size: 0.85em;
-            color: #666;
-        }
-
-        .chart-container {
-            min-height: 300px;
-        }
-
-        .charts-row {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(400px, 1fr));
-            gap: 20px;
-        }
-
-        .error-message {
-            background: #fee;
-            color: #c00;
-            padding: 15px;
-            border-radius: 4px;
-            margin-top: 15px;
-            display: none;
-        }
-
-        .masters-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 15px;
-        }
-
-        .master-card {
-            background: #f8f9fa;
-            padding: 15px;
-            border-radius: 4px;
-            border-left: 4px solid #3498db;
-        }
-
-        .master-card h4 {
-            margin-bottom: 10px;
-            color: #2c3e50;
-        }
-
-        .master-card p {
-            font-size: 0.9em;
-            color: #666;
-            margin: 4px 0;
-        }
-    </style>
+    <title>FontBench</title>
+    <link rel="stylesheet" href="/static/styles.css">
+    <!-- <script src="https://cdn.plot.ly/plotly-2.35.0.min.js"></script> -->
+    <script src="https://cdn.plot.ly/plotly-3.3.1.min.js"></script>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>FontBench Web</h1>
-        </div>
-    </header>
-
-    <div class="container">
-        <div class="upload-section">
-            <div class="upload-area" id="uploadArea">
-                <input type="file" id="fileInput" accept=".glyphs,.glyphx">
-                <p>Drag & drop a Glyphs file here, or click to select</p>
-                <p class="file-types">Supported: .glyphs, .glyphx</p>
-            </div>
-            <div id="loading">
-                <div class="spinner"></div>
-                <p>Analyzing font file...</p>
-            </div>
-            <div class="error-message" id="errorMessage"></div>
-        </div>
-
-        <div id="results">
-            <div class="card">
-                <h2>Font Information</h2>
-                <div class="info-grid" id="fontInfo"></div>
-            </div>
-
-            <div class="card">
-                <h2>Masters</h2>
-                <div class="masters-list" id="mastersList"></div>
-            </div>
-
-            <div class="card">
-                <h2>Statistics</h2>
-                <div class="stats-grid" id="statsGrid"></div>
-            </div>
-
-            <div class="charts-row">
-                <div class="card">
-                    <h2>Width Distribution</h2>
-                    <div class="chart-container" id="widthChart"></div>
+    <div class="app-layout">
+        <!-- Side Navigation -->
+        <nav class="side-nav">
+            <div class="nav-top">
+                <div class="nav-icon active" title="分析">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18 17V9"/>
+                        <path d="M13 17V5"/>
+                        <path d="M8 17v-3"/>
+                    </svg>
                 </div>
+            </div>
+            <div class="nav-bottom">
+                <div class="nav-icon" title="设置">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                    </svg>
+                </div>
+            </div>
+        </nav>
 
-                <div class="card">
-                    <h2>Node Count Distribution</h2>
-                    <div class="chart-container" id="nodeChart"></div>
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Font Panel -->
+            <div class="font-panel">
+                <div class="panel-header">
+                    <div class="panel-title">字符集</div>
+                    <select class="charset-select" id="charsetSelect">
+                        <option value="3500">常用汉字 3500</option>
+                        <option value="7000">常用汉字 7000</option>
+                        <option value="chinese">全部汉字</option>
+                    </select>
+                </div>
+                <div class="font-list" id="fontList">
+                    <button class="add-font-btn" id="addFontBtn">
+                        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <line x1="12" y1="5" x2="12" y2="19"/>
+                            <line x1="5" y1="12" x2="19" y2="12"/>
+                        </svg>
+                        添加字体
+                    </button>
+                </div>
+            </div>
+
+            <!-- Chart Area -->
+            <div class="chart-area">
+                <div class="chart-header">
+                    <div class="chart-header-left">
+                        <span class="chart-title">灰度分布</span>
+                        <span class="chart-subtitle" id="chartSubtitle"></span>
+                    </div>
+                    <div class="chart-controls">
+                        <div class="bin-control" id="binControl">
+                            <label>箱宽</label>
+                            <input type="number" id="binSize" value="0.01" min="0.001" max="0.1" step="0.005">
+                        </div>
+                        <div class="chart-type-toggle">
+                            <button class="chart-type-btn active" data-type="scatter" title="散点图 (字符排序)">
+                                <svg viewBox="0 0 24 24" fill="currentColor">
+                                    <circle cx="5" cy="17" r="2"/>
+                                    <circle cx="9" cy="11" r="2"/>
+                                    <circle cx="14" cy="13" r="2"/>
+                                    <circle cx="19" cy="6" r="2"/>
+                                </svg>
+                            </button>
+                            <button class="chart-type-btn" data-type="rank" title="排名图 (百分位)">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <path d="M3 20 L21 4"/>
+                                    <circle cx="6" cy="17" r="2" fill="currentColor"/>
+                                    <circle cx="12" cy="11" r="2" fill="currentColor"/>
+                                    <circle cx="18" cy="5" r="2" fill="currentColor"/>
+                                </svg>
+                            </button>
+                            <button class="chart-type-btn" data-type="histogram" title="直方图">
+                                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                    <rect x="2" y="14" width="5" height="7"/>
+                                    <rect x="9" y="8" width="5" height="13"/>
+                                    <rect x="16" y="4" width="5" height="17"/>
+                                </svg>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <div class="chart-container" id="chartContainer">
+                    <div class="empty-state" id="emptyState">添加字体以查看灰度分布</div>
                 </div>
             </div>
         </div>
     </div>
 
-    <script>
-        const uploadArea = document.getElementById('uploadArea');
-        const fileInput = document.getElementById('fileInput');
-        const loading = document.getElementById('loading');
-        const results = document.getElementById('results');
-        const errorMessage = document.getElementById('errorMessage');
+    <!-- Add Font Modal -->
+    <div class="modal-overlay" id="fontModal">
+        <div class="modal">
+            <div class="modal-title">选择字体</div>
+            <div class="modal-list" id="fontModalList"></div>
+            <button class="modal-close" id="modalClose">取消</button>
+        </div>
+    </div>
 
-        // Drag and drop handlers
-        uploadArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            uploadArea.classList.add('dragover');
-        });
-
-        uploadArea.addEventListener('dragleave', () => {
-            uploadArea.classList.remove('dragover');
-        });
-
-        uploadArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            uploadArea.classList.remove('dragover');
-            const files = e.dataTransfer.files;
-            if (files.length > 0) {
-                handleFile(files[0]);
-            }
-        });
-
-        uploadArea.addEventListener('click', () => {
-            fileInput.click();
-        });
-
-        fileInput.addEventListener('change', (e) => {
-            if (e.target.files.length > 0) {
-                handleFile(e.target.files[0]);
-            }
-        });
-
-        async function handleFile(file) {
-            // Validate file type
-            if (!file.name.endsWith('.glyphs') && !file.name.endsWith('.glyphx')) {
-                showError('Please upload a .glyphs or .glyphx file');
-                return;
-            }
-
-            // Show loading state
-            loading.style.display = 'block';
-            results.style.display = 'none';
-            errorMessage.style.display = 'none';
-
-            try {
-                const formData = new FormData();
-                formData.append('file', file);
-
-                const response = await fetch('/api/upload', {
-                    method: 'POST',
-                    body: formData
-                });
-
-                if (!response.ok) {
-                    const error = await response.json();
-                    throw new Error(error.detail || 'Upload failed');
-                }
-
-                const data = await response.json();
-                displayResults(data);
-            } catch (error) {
-                showError(error.message);
-            } finally {
-                loading.style.display = 'none';
-            }
-        }
-
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.style.display = 'block';
-        }
-
-        function displayResults(data) {
-            results.style.display = 'block';
-
-            // Font info
-            const fontInfo = document.getElementById('fontInfo');
-            const info = data.font_info;
-            fontInfo.innerHTML = `
-                <div class="info-item"><label>Family Name</label><span>${info.family_name || 'N/A'}</span></div>
-                <div class="info-item"><label>Designer</label><span>${info.designer || 'N/A'}</span></div>
-                <div class="info-item"><label>Units Per Em</label><span>${info.units_per_em}</span></div>
-                <div class="info-item"><label>Version</label><span>${info.version_major}.${info.version_minor}</span></div>
-                <div class="info-item"><label>Glyph Count</label><span>${data.glyph_count}</span></div>
-            `;
-
-            // Masters
-            const mastersList = document.getElementById('mastersList');
-            mastersList.innerHTML = data.masters.map(m => `
-                <div class="master-card">
-                    <h4>${m.name || m.id}</h4>
-                    <p>Ascender: ${m.ascender}</p>
-                    <p>Descender: ${m.descender}</p>
-                    <p>Cap Height: ${m.cap_height}</p>
-                    <p>x-Height: ${m.x_height}</p>
-                </div>
-            `).join('');
-
-            // Statistics
-            const statsGrid = document.getElementById('statsGrid');
-            const stats = data.statistics;
-            statsGrid.innerHTML = `
-                <div class="stat-box"><div class="value">${data.glyph_count}</div><div class="label">Total Glyphs</div></div>
-                <div class="stat-box"><div class="value">${stats.width.mean.toFixed(0)}</div><div class="label">Avg Width</div></div>
-                <div class="stat-box"><div class="value">${stats.width.min.toFixed(0)} - ${stats.width.max.toFixed(0)}</div><div class="label">Width Range</div></div>
-                <div class="stat-box"><div class="value">${stats.nodes.total}</div><div class="label">Total Nodes</div></div>
-                <div class="stat-box"><div class="value">${stats.nodes.mean.toFixed(1)}</div><div class="label">Avg Nodes/Glyph</div></div>
-                <div class="stat-box"><div class="value">${data.masters.length}</div><div class="label">Masters</div></div>
-            `;
-
-            // Charts
-            const chartLayout = {
-                margin: { t: 20, r: 20, b: 40, l: 50 },
-                paper_bgcolor: 'transparent',
-                plot_bgcolor: 'transparent',
-                font: { family: '-apple-system, BlinkMacSystemFont, sans-serif' }
-            };
-
-            const chartConfig = {
-                responsive: true,
-                displayModeBar: true,
-                modeBarButtonsToRemove: ['lasso2d', 'select2d']
-            };
-
-            // Width distribution
-            Plotly.newPlot('widthChart', [data.charts.width_distribution], {
-                ...chartLayout,
-                xaxis: { title: 'Width (units)' },
-                yaxis: { title: 'Count' }
-            }, chartConfig);
-
-            // Node distribution
-            Plotly.newPlot('nodeChart', [data.charts.node_distribution], {
-                ...chartLayout,
-                xaxis: { title: 'Node Count' },
-                yaxis: { title: 'Count' }
-            }, chartConfig);
-        }
-    </script>
+    <script src="/static/app.js"></script>
 </body>
 </html>

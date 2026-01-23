@@ -1,0 +1,510 @@
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+    background: #fafafa;
+    color: #1a1a1a;
+    line-height: 1.6;
+    height: 100vh;
+    overflow: hidden;
+}
+
+/* Layout */
+.app-layout {
+    display: flex;
+    height: 100vh;
+}
+
+/* Side Nav */
+.side-nav {
+    width: 56px;
+    background: #fff;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 16px 0;
+    flex-shrink: 0;
+}
+
+.nav-top {
+    flex: 1;
+}
+
+.nav-bottom {
+    margin-top: auto;
+}
+
+.nav-icon {
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 8px;
+    cursor: pointer;
+    color: #999;
+    transition: all 0.2s;
+    margin-bottom: 8px;
+}
+
+.nav-icon:hover {
+    background: #f5f5f5;
+    color: #666;
+}
+
+.nav-icon.active {
+    background: #f0f0f0;
+    color: #1a1a1a;
+}
+
+.nav-icon svg {
+    width: 20px;
+    height: 20px;
+}
+
+/* Main Content */
+.main-content {
+    flex: 1;
+    display: flex;
+    overflow: hidden;
+}
+
+/* Font Panel */
+.font-panel {
+    width: 280px;
+    background: #fff;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+}
+
+.panel-header {
+    padding: 24px 20px 16px;
+    border-bottom: 1px solid #f0f0f0;
+}
+
+.panel-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 12px;
+}
+
+.charset-select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    background: white;
+    cursor: pointer;
+}
+
+.charset-select:focus {
+    outline: none;
+    border-color: #1a1a1a;
+}
+
+.font-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.font-item {
+    background: #fafafa;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+.font-header {
+    display: flex;
+    align-items: center;
+    padding: 12px;
+    gap: 10px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.font-header:hover {
+    background: rgba(0, 0, 0, 0.03);
+}
+
+.font-checkbox {
+    width: 16px;
+    height: 16px;
+    cursor: pointer;
+    accent-color: #1a1a1a;
+}
+
+.font-name {
+    flex: 1;
+    font-size: 0.9rem;
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.font-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+}
+
+.font-remove {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    color: #ccc;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.font-remove:hover {
+    background: #eee;
+    color: #999;
+}
+
+.master-list {
+    padding: 0 12px 12px 38px;
+}
+
+.master-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 0;
+    cursor: pointer;
+    border-radius: 4px;
+    margin: 0 -4px;
+    padding-left: 4px;
+    padding-right: 4px;
+    transition: background 0.15s;
+}
+
+.master-item:hover {
+    background: rgba(0, 0, 0, 0.04);
+}
+
+.master-checkbox {
+    width: 14px;
+    height: 14px;
+    cursor: pointer;
+    accent-color: #1a1a1a;
+}
+
+.master-name {
+    font-size: 0.85rem;
+    color: #666;
+    flex: 1;
+}
+
+.master-color {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.reference-btn {
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    color: #ddd;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.15s;
+    opacity: 0;
+}
+
+.master-item:hover .reference-btn {
+    opacity: 1;
+}
+
+.reference-btn:hover {
+    color: #999;
+    background: rgba(0, 0, 0, 0.05);
+}
+
+.reference-btn.active {
+    opacity: 1;
+    color: #1a1a1a;
+}
+
+.reference-btn.active:hover {
+    background: rgba(0, 0, 0, 0.08);
+}
+
+.add-font-btn {
+    padding: 10px;
+    border: 1px dashed #ddd;
+    border-radius: 8px;
+    background: none;
+    color: #999;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    flex-shrink: 0;
+}
+
+.add-font-btn:hover {
+    border-color: #bbb;
+    color: #666;
+    background: #fafafa;
+}
+
+.spinner {
+    display: inline-block;
+    width: 14px;
+    height: 14px;
+    border: 2px solid #ddd;
+    border-top-color: #999;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+    to { transform: rotate(360deg); }
+}
+
+/* Chart Area */
+.chart-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    padding: 24px;
+    overflow: hidden;
+}
+
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    flex-shrink: 0;
+}
+
+.chart-header-left {
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+}
+
+.chart-title {
+    font-size: 1.1rem;
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.chart-subtitle {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.chart-type-toggle {
+    display: flex;
+    background: #f0f0f0;
+    border-radius: 6px;
+    padding: 3px;
+}
+
+.chart-type-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 32px;
+    height: 28px;
+    border: none;
+    background: none;
+    border-radius: 4px;
+    cursor: pointer;
+    color: #999;
+    transition: all 0.2s;
+}
+
+.chart-type-btn:hover {
+    color: #666;
+}
+
+.chart-type-btn.active {
+    background: white;
+    color: #1a1a1a;
+    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+
+.chart-type-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.chart-controls {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+}
+
+.bin-control {
+    display: none;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.bin-control.active {
+    display: flex;
+}
+
+.bin-control label {
+    color: #999;
+}
+
+.bin-control input {
+    width: 60px;
+    padding: 4px 8px;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    text-align: center;
+}
+
+.bin-control input:focus {
+    outline: none;
+    border-color: #1a1a1a;
+}
+
+.chart-container {
+    flex: 1;
+    background: #fff;
+    border-radius: 12px;
+    border: 1px solid #eee;
+    min-height: 0;
+}
+
+.empty-state {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    color: #999;
+    font-size: 0.9rem;
+}
+
+/* Modal */
+.modal-overlay {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.3);
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+}
+
+.modal-overlay.active {
+    display: flex;
+}
+
+.modal {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    width: 320px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+}
+
+.modal-title {
+    font-size: 1rem;
+    font-weight: 500;
+    margin-bottom: 16px;
+}
+
+.modal-list {
+    flex: 1;
+    overflow-y: auto;
+    margin: 0 -24px;
+    padding: 0 24px;
+}
+
+.modal-item {
+    padding: 12px 0;
+    border-bottom: 1px solid #f0f0f0;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.modal-item:hover {
+    background: #fafafa;
+    margin: 0 -24px;
+    padding: 12px 24px;
+}
+
+.modal-item.loading {
+    pointer-events: none;
+    color: #999;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.modal-item.loading .spinner {
+    width: 14px;
+    height: 14px;
+}
+
+.modal-item.added {
+    pointer-events: none;
+    color: #999;
+}
+
+.modal-item:last-child {
+    border-bottom: none;
+}
+
+.modal-close {
+    margin-top: 16px;
+    padding: 10px;
+    border: 1px solid #e0e0e0;
+    border-radius: 6px;
+    background: none;
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.modal-close:hover {
+    background: #fafafa;
+}
+
+.no-fonts {
+    color: #999;
+    text-align: center;
+    padding: 24px;
+}
