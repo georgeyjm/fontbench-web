@@ -5,14 +5,12 @@ description = "Web app for visualizing and inspecting FontBench results"
 readme = "README.md"
 requires-python = ">=3.13"
 dependencies = [
-    "fastapi>=0.115.0",
+    "fastapi[standard]>=0.128.0,<0.129.0",
     "glyphslib>=6.12.6",
     "numpy>=2.4.1",
     "pandas>=3.0.0",
     "pillow>=12.1.0",
-    "python-multipart>=0.0.9",
     "pyvips>=3.1.1",
-    "uvicorn>=0.30.0",
 ]
 
 [project.scripts]
