@@ -4,6 +4,7 @@
 # Project
 output/
 intermediary/
+app/data/grayscale/*
 *.xlsx
 *.numbers
 *.pages
