@@ -280,7 +280,7 @@ dependencies = [
 
 [package.metadata]
 requires-dist = [
-    { name = "fastapi", extras = ["standard"], specifier = ">=0.128.0" },
+    { name = "fastapi", extras = ["standard"], specifier = ">=0.128.0,<0.129.0" },
     { name = "glyphslib", specifier = ">=6.12.6" },
     { name = "numpy", specifier = ">=2.4.1" },
     { name = "pandas", specifier = ">=3.0.0" },
