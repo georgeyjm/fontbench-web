@@ -5,6 +5,8 @@
 output/
 intermediary/
 app/data/grayscale/*
+app/fontbench.db
+app/uploads/
 *.xlsx
 *.numbers
 *.pages
