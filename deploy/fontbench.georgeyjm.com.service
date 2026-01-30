@@ -5,8 +5,8 @@ After=network.target
 [Service]
 User=ubuntu
 Group=ubuntu
-WorkingDirectory=/srv/apps/fontbench.georgeyjm.com
-ExecStart=/srv/apps/fontbench.georgeyjm.com/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8003 --proxy-headers
+WorkingDirectory=/srv/apps/fontbench-web
+ExecStart=/srv/apps/fontbench-web/.venv/bin/uvicorn app.main:app --host 127.0.0.1 --port 8003 --proxy-headers
 Restart=always
 
 [Install]

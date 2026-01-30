@@ -19,6 +19,7 @@ jobs:
             cd /srv/apps/fontbench-web
             git pull origin main
             uv sync
+            sudo apt install -y libvips
             sudo ln -sf $(pwd)/deploy/fontbench.georgeyjm.com.service /etc/systemd/system/fontbench.georgeyjm.com.service
             sudo systemctl daemon-reload
             sudo systemctl restart fontbench.georgeyjm.com
