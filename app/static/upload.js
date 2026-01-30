@@ -5,6 +5,7 @@ const state = {
     selectedMetrics: new Set(),
     jobs: [],
     pollingIntervals: new Map(), // job_id -> interval
+    jobFilenames: new Map(), // job_id -> original filename (for display before processing completes)
 };
 
 // DOM Elements
@@ -86,6 +87,11 @@ function renderMetrics() {
     });
 }
 
+function getJobDisplayName(job) {
+    // Use font_name from server, or fall back to stored filename
+    return job.font_name || state.jobFilenames.get(job.job_id) || '处理中...';
+}
+
 function renderJobs() {
     if (state.jobs.length === 0) {
         elements.jobsList.innerHTML = '<div class="empty-jobs">暂无处理任务</div>';
@@ -105,10 +111,11 @@ function renderJobs() {
         const canDelete = job.status === 'completed' || job.status === 'failed';
 
         const metricsDisplay = (job.requested_metrics || []).map(m => getMetricDisplayName(m)).join(', ');
+        const displayName = getJobDisplayName(job);
         return `
             <div class="job-item ${statusClass}" data-job-id="${job.job_id}">
                 <div class="job-header">
-                    <span class="job-name">${job.font_name}</span>
+                    <span class="job-name">${displayName}</span>
                     ${canDelete ? `<button class="job-delete" data-job-id="${job.job_id}" title="删除">
                         <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
                             <line x1="18" y1="6" x2="6" y2="18"/>
@@ -174,10 +181,10 @@ function showSelectedFile() {
     if (state.selectedFile) {
         elements.fileName.textContent = state.selectedFile.name;
         elements.selectedFile.style.display = 'block';
-        elements.dropZone.classList.add('has-file');
+        elements.dropZone.style.display = 'none';
     } else {
         elements.selectedFile.style.display = 'none';
-        elements.dropZone.classList.remove('has-file');
+        elements.dropZone.style.display = 'block';
     }
     updateSubmitButton();
 }
@@ -186,6 +193,80 @@ function setSubmitting(isSubmitting) {
     elements.submitBtn.disabled = isSubmitting;
     elements.submitBtn.querySelector('.submit-text').style.display = isSubmitting ? 'none' : 'inline';
     elements.submitBtn.querySelector('.submit-spinner').style.display = isSubmitting ? 'inline-block' : 'none';
+}
+
+// Update a single job element in-place (for smooth progress bar transitions)
+function updateJobElement(job) {
+    const jobElement = elements.jobsList.querySelector(`[data-job-id="${job.job_id}"]`);
+    if (!jobElement) return false;
+
+    // Update status class
+    jobElement.className = `job-item job-status-${job.status}`;
+
+    // Update job name
+    const nameElement = jobElement.querySelector('.job-name');
+    if (nameElement) {
+        nameElement.textContent = getJobDisplayName(job);
+    }
+
+    // Update progress bar (in-place for smooth transition)
+    let progressContainer = jobElement.querySelector('.job-progress');
+    if (job.status === 'processing') {
+        if (!progressContainer) {
+            // Create progress bar if it doesn't exist
+            progressContainer = document.createElement('div');
+            progressContainer.className = 'job-progress';
+            progressContainer.innerHTML = '<div class="job-progress-bar" style="width: 0%"></div>';
+            const metricsElement = jobElement.querySelector('.job-metrics');
+            metricsElement.insertAdjacentElement('afterend', progressContainer);
+        }
+        const progressBar = progressContainer.querySelector('.job-progress-bar');
+        if (progressBar) {
+            progressBar.style.width = `${job.progress}%`;
+        }
+    } else if (progressContainer) {
+        progressContainer.remove();
+    }
+
+    // Update status text
+    const statusText = jobElement.querySelector('.job-status-text');
+    if (statusText) {
+        statusText.textContent = getStatusText(job);
+    }
+
+    // Update time
+    const timeElement = jobElement.querySelector('.job-time');
+    if (timeElement) {
+        timeElement.textContent = getTimeText(job);
+    }
+
+    // Update delete button visibility
+    const canDelete = job.status === 'completed' || job.status === 'failed';
+    const headerElement = jobElement.querySelector('.job-header');
+    const existingDelete = headerElement.querySelector('.job-delete');
+
+    if (canDelete && !existingDelete) {
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'job-delete';
+        deleteBtn.dataset.jobId = job.job_id;
+        deleteBtn.title = '删除';
+        deleteBtn.innerHTML = `
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <line x1="18" y1="6" x2="6" y2="18"/>
+                <line x1="6" y1="6" x2="18" y2="18"/>
+            </svg>
+        `;
+        deleteBtn.addEventListener('click', async (e) => {
+            e.stopPropagation();
+            if (await deleteJob(job.job_id)) {
+                stopPollingJob(job.job_id);
+                await loadJobs();
+            }
+        });
+        headerElement.appendChild(deleteBtn);
+    }
+
+    return true;
 }
 
 // Polling
@@ -203,7 +284,10 @@ function startPollingJob(jobId) {
         const index = state.jobs.findIndex(j => j.job_id === jobId);
         if (index !== -1) {
             state.jobs[index] = job;
-            renderJobs();
+            // Try to update in-place for smooth transitions
+            if (!updateJobElement(job)) {
+                renderJobs();
+            }
         }
 
         // Stop polling if job is done
@@ -270,9 +354,13 @@ async function handleSubmit() {
     if (!state.selectedFile || state.selectedMetrics.size === 0) return;
 
     setSubmitting(true);
+    const uploadedFilename = state.selectedFile.name;
 
     try {
         const result = await submitJob(state.selectedFile, Array.from(state.selectedMetrics));
+
+        // Store the filename for this job (for display before processing completes)
+        state.jobFilenames.set(result.job_id, uploadedFilename);
 
         // Reset form
         state.selectedFile = null;

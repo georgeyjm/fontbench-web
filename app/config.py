@@ -1,7 +1,7 @@
 from pathlib import Path
 
 # Base directories
-APP_DIR = Path(__file__).parent
+APP_DIR = Path(Path(__file__).parent.name)  # Should be Path('app')
 STATIC_DIR = APP_DIR / 'static'
 DATA_DIR = APP_DIR / 'data'
 UPLOADS_DIR = APP_DIR / 'uploads'

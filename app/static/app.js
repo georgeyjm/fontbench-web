@@ -1,12 +1,12 @@
 // State
 const state = {
-    availableFonts: [],
-    addedFonts: [], // { name, masters: [], enabledMasters: Set, enabled: bool, color: {h, s, l} }
-    fontData: new Map(), // fontName -> { masters: [], data: Map<master, {chars, values}> }
+    availableTypefaces: [],  // Array of { id, name }
+    addedTypefaces: [], // { id, name, fonts: [{ id, name, masters: [], enabledMasters: Set }], enabled: bool, color: {h, s, l} }
+    fontData: new Map(), // fontId -> { masters: [], data: Map<master, {chars, values}> }
     chartType: 'scatter', // 'scatter', 'histogram', 'rank'
     binSize: 0.01,
     currentCharset: '3500',
-    referenceTrace: null, // { fontName, master } - used for scatter plot sorting
+    referenceTrace: null, // { typefaceId, fontId, fontName, master } - used for scatter plot sorting
 };
 
 // Color palette - different hues for different fonts
@@ -42,41 +42,58 @@ const icons = {
 };
 
 // API functions
-async function fetchAvailableFonts(metric = 'grayscale') {
+async function fetchAvailableTypefaces(metric = 'grayscale') {
     const response = await fetch(`/api/data/${metric}`);
     const data = await response.json();
-    return data.files;
+    return data.typefaces;  // Array of { id, name }
 }
 
-async function fetchGrayscaleData(fontName, charset, metric = 'grayscale') {
-    // Fetch initial data to get masters list
-    const response = await fetch(`/api/data/${metric}/${encodeURIComponent(fontName)}?charset=${charset}`);
+async function fetchTypefaceFonts(typefaceId, charset, metric = 'grayscale') {
+    // Fetch typeface info with all fonts and their masters
+    const response = await fetch(`/api/data/${metric}/${typefaceId}?charset=${charset}`);
     const data = await response.json();
+    return data;  // { typeface_id, typeface_name, fonts: [{ id, name, masters }] }
+}
 
-    const fontData = {
-        masters: data.masters,
-        data: new Map(),
+async function fetchFontMasterData(typefaceId, fontId, master, charset, metric = 'grayscale') {
+    const response = await fetch(
+        `/api/data/${metric}/${typefaceId}/${fontId}?charset=${charset}&master=${encodeURIComponent(master)}`
+    );
+    const data = await response.json();
+    return {
+        chars: data.chart_data.text,
+        values: data.chart_data.y,
     };
+}
 
-    // Fetch data for each master in parallel
-    const masterPromises = data.masters.map(async (master) => {
-        const masterResponse = await fetch(
-            `/api/data/${metric}/${encodeURIComponent(fontName)}?charset=${charset}&master=${encodeURIComponent(master)}`
-        );
-        const masterData = await masterResponse.json();
-        return {
-            master,
-            chars: masterData.chart_data.text,
-            values: masterData.chart_data.y,
-        };
-    });
+async function fetchAllFontData(typefaceId, fonts, charset, metric = 'grayscale') {
+    // Fetch data for all fonts and masters in parallel
+    const allPromises = [];
 
-    const masterResults = await Promise.all(masterPromises);
-    masterResults.forEach(({ master, chars, values }) => {
-        fontData.data.set(master, { chars, values });
-    });
+    for (const font of fonts) {
+        for (const master of font.masters) {
+            allPromises.push(
+                fetchFontMasterData(typefaceId, font.id, master, charset, metric)
+                    .then(data => ({ fontId: font.id, master, ...data }))
+            );
+        }
+    }
 
-    return fontData;
+    const results = await Promise.all(allPromises);
+
+    // Organize by fontId
+    const fontDataMap = new Map();
+    for (const result of results) {
+        if (!fontDataMap.has(result.fontId)) {
+            fontDataMap.set(result.fontId, { data: new Map() });
+        }
+        fontDataMap.get(result.fontId).data.set(result.master, {
+            chars: result.chars,
+            values: result.values,
+        });
+    }
+
+    return fontDataMap;
 }
 
 // Color utilities
@@ -95,41 +112,48 @@ function getMasterColor(baseColor, index, total) {
 
 // UI functions
 function renderFontList() {
-    const fontsHtml = state.addedFonts.map((font, fontIndex) => {
-        const mastersHtml = font.masters.map((master, masterIndex) => {
-            const color = getMasterColor(font.color, masterIndex, font.masters.length);
-            const checked = font.enabledMasters.has(master) ? 'checked' : '';
-            const traceName = font.masters.length > 1 ? `${font.name} - ${master}` : font.name;
-            const isReference = state.referenceTrace?.fontName === font.name && state.referenceTrace?.master === master;
-            const refClass = isReference ? 'reference-btn active' : 'reference-btn';
-            return `
-                <div class="master-item" data-trace="${traceName}" data-font-name="${font.name}" data-master-name="${master}">
-                    <input type="checkbox" class="master-checkbox"
-                        data-font="${fontIndex}" data-master="${master}" ${checked}>
-                    <span class="master-name">${master}</span>
-                    <span class="master-color" style="background: ${color}"></span>
-                    <button class="${refClass}" data-font-name="${font.name}" data-master-name="${master}" title="设为排序参考">
-                        <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
-                            <circle cx="12" cy="10" r="4"/>
-                            <path d="M12 14v6"/>
-                        </svg>
-                    </button>
-                </div>
-            `;
+    const typefacesHtml = state.addedTypefaces.map((typeface, typefaceIndex) => {
+        // Count total masters across all fonts for color distribution
+        const totalMasters = typeface.fonts.reduce((sum, f) => sum + f.masters.length, 0);
+        let masterColorIndex = 0;
+
+        const fontsHtml = typeface.fonts.map((font) => {
+            const mastersHtml = font.masters.map((master) => {
+                const color = getMasterColor(typeface.color, masterColorIndex, totalMasters);
+                masterColorIndex++;
+                const checked = font.enabledMasters.has(master) ? 'checked' : '';
+                const traceName = totalMasters > 1 ? `${typeface.name} - ${master}` : typeface.name;
+                const isReference = state.referenceTrace?.fontId === font.id && state.referenceTrace?.master === master;
+                const refClass = isReference ? 'reference-btn active' : 'reference-btn';
+                return `
+                    <div class="master-item" data-trace="${traceName}" data-typeface-id="${typeface.id}" data-font-id="${font.id}" data-master-name="${master}">
+                        <input type="checkbox" class="master-checkbox"
+                            data-typeface="${typefaceIndex}" data-font-id="${font.id}" data-master="${master}" ${checked}>
+                        <span class="master-name">${master}</span>
+                        <span class="master-color" style="background: ${color}"></span>
+                        <button class="${refClass}" data-typeface-id="${typeface.id}" data-font-id="${font.id}" data-master-name="${master}" title="设为排序参考">
+                            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <circle cx="12" cy="10" r="4"/>
+                                <path d="M12 14v6"/>
+                            </svg>
+                        </button>
+                    </div>
+                `;
+            }).join('');
+            return mastersHtml;
         }).join('');
 
-        const allChecked = font.enabled ? 'checked' : '';
-        const baseColor = `hsl(${font.color.h}, ${font.color.s}%, ${font.color.l}%)`;
+        const allChecked = typeface.enabled ? 'checked' : '';
 
         return `
-            <div class="font-item" data-font-name="${font.name}">
+            <div class="font-item" data-typeface-id="${typeface.id}">
                 <div class="font-header">
-                    <input type="checkbox" class="font-checkbox" data-font="${fontIndex}" ${allChecked}>
-                    <span class="font-name">${font.name}</span>
-                    
-                    <button class="font-remove" data-font="${fontIndex}">${icons.remove}</button>
+                    <input type="checkbox" class="font-checkbox" data-typeface="${typefaceIndex}" ${allChecked}>
+                    <span class="font-name">${typeface.name}</span>
+
+                    <button class="font-remove" data-typeface="${typefaceIndex}">${icons.remove}</button>
                 </div>
-                <div class="master-list">${mastersHtml}</div>
+                <div class="master-list">${fontsHtml}</div>
             </div>
         `;
     }).join('');
@@ -142,7 +166,7 @@ function renderFontList() {
         </button>
     `;
 
-    elements.fontList.innerHTML = fontsHtml + addBtnHtml;
+    elements.fontList.innerHTML = typefacesHtml + addBtnHtml;
 
     // Re-acquire addFontBtn reference and attach listener
     elements.addFontBtn = document.getElementById('addFontBtn');
@@ -150,13 +174,13 @@ function renderFontList() {
 
     // Attach event listeners
     elements.fontList.querySelectorAll('.font-checkbox').forEach(cb => {
-        cb.addEventListener('change', handleFontToggle);
+        cb.addEventListener('change', handleTypefaceToggle);
     });
     elements.fontList.querySelectorAll('.master-checkbox').forEach(cb => {
         cb.addEventListener('change', handleMasterToggle);
     });
     elements.fontList.querySelectorAll('.font-remove').forEach(btn => {
-        btn.addEventListener('click', handleFontRemove);
+        btn.addEventListener('click', handleTypefaceRemove);
     });
 
     // Hover highlight listeners for individual masters
@@ -165,13 +189,16 @@ function renderFontList() {
         item.addEventListener('mouseleave', () => highlightTrace(null));
     });
 
-    // Hover highlight listeners for entire font (highlights all masters)
+    // Hover highlight listeners for entire typeface (highlights all masters)
     elements.fontList.querySelectorAll('.font-header').forEach(header => {
         const fontItem = header.closest('.font-item');
-        const fontName = fontItem?.dataset.fontName;
-        if (fontName) {
-            header.addEventListener('mouseenter', () => highlightFont(fontName));
-            header.addEventListener('mouseleave', () => highlightTrace(null));
+        const typefaceId = fontItem?.dataset.typefaceId;
+        if (typefaceId) {
+            const typeface = state.addedTypefaces.find(t => t.id === parseInt(typefaceId));
+            if (typeface) {
+                header.addEventListener('mouseenter', () => highlightTypeface(typeface.name));
+                header.addEventListener('mouseleave', () => highlightTrace(null));
+            }
         }
     });
 
@@ -179,9 +206,10 @@ function renderFontList() {
     elements.fontList.querySelectorAll('.reference-btn').forEach(btn => {
         btn.addEventListener('click', (e) => {
             e.stopPropagation();
-            const fontName = btn.dataset.fontName;
+            const typefaceId = parseInt(btn.dataset.typefaceId);
+            const fontId = parseInt(btn.dataset.fontId);
             const masterName = btn.dataset.masterName;
-            setReference(fontName, masterName);
+            setReference(typefaceId, fontId, masterName);
         });
     });
 }
@@ -197,7 +225,7 @@ function updateChart() {
     if (isScatter) {
         const ref = state.referenceTrace || getFirstEnabledMaster();
         if (ref) {
-            const refFontData = state.fontData.get(ref.fontName);
+            const refFontData = state.fontData.get(ref.fontId);
             const refMasterData = refFontData?.data.get(ref.master);
             if (refMasterData) {
                 // Create a map of character -> index based on reference order
@@ -209,18 +237,29 @@ function updateChart() {
         }
     }
 
-    state.addedFonts.forEach((font) => {
-        const fontData = state.fontData.get(font.name);
-        if (!fontData) return;
+    state.addedTypefaces.forEach((typeface) => {
+        // Count total masters for color distribution
+        const totalMasters = typeface.fonts.reduce((sum, f) => sum + f.masters.length, 0);
+        let masterColorIndex = 0;
 
-        const enabledMasters = Array.from(font.enabledMasters);
-        enabledMasters.forEach((master) => {
-            const masterData = fontData.data.get(master);
-            if (!masterData) return;
+        typeface.fonts.forEach((font) => {
+            const fontData = state.fontData.get(font.id);
+            if (!fontData) return;
 
-            const masterIndexInAll = font.masters.indexOf(master);
-            const color = getMasterColor(font.color, masterIndexInAll, font.masters.length);
-            const traceName = font.masters.length > 1 ? `${font.name} - ${master}` : font.name;
+            font.masters.forEach((master) => {
+                const masterData = fontData.data.get(master);
+                if (!masterData) {
+                    masterColorIndex++;
+                    return;
+                }
+                if (!font.enabledMasters.has(master)) {
+                    masterColorIndex++;
+                    return;
+                }
+
+                const color = getMasterColor(typeface.color, masterColorIndex, totalMasters);
+                masterColorIndex++;
+                const traceName = totalMasters > 1 ? `${typeface.name} - ${master}` : typeface.name;
 
             if (isScatter) {
                 // Reorder data according to reference character order
@@ -281,6 +320,7 @@ function updateChart() {
                     hovertemplate: '灰度: %{x:.4f}<br>数量: %{y}<extra></extra>',
                 });
             }
+            });
         });
     });
 
@@ -298,7 +338,7 @@ function updateChart() {
         elements.chartSubtitle.textContent = `${traces.length} 条曲线 (百分位排序)`;
     } else {
         const ref = state.referenceTrace || getFirstEnabledMaster();
-        const refName = ref ? (ref.fontName + (ref.master ? ` - ${ref.master}` : '')) : '';
+        const refName = ref ? (ref.typefaceName + (ref.master ? ` - ${ref.master}` : '')) : '';
         elements.chartSubtitle.textContent = `${traces.length} 条曲线` + (refName ? ` (参考: ${refName})` : '');
     }
 
@@ -379,36 +419,39 @@ function highlightTrace(traceName) {
     }
 }
 
-function highlightFont(fontName) {
+function highlightTypeface(typefaceName) {
     const chartDiv = document.getElementById('chartContainer');
     if (!chartDiv || !chartDiv.data) return;
 
     const traceCount = chartDiv.data.length;
     if (traceCount === 0) return;
 
-    // Highlight all traces that belong to this font
+    // Highlight all traces that belong to this typeface
     const opacities = chartDiv.data.map(trace =>
-        trace.name === fontName || trace.name.startsWith(`${fontName} - `) ? 1 : 0.1
+        trace.name === typefaceName || trace.name.startsWith(`${typefaceName} - `) ? 1 : 0.1
     );
     Plotly.restyle('chartContainer', { opacity: opacities });
 }
 
-function setReference(fontName, masterName) {
+function setReference(typefaceId, fontId, masterName) {
     // Toggle reference off if clicking the same one
-    if (state.referenceTrace?.fontName === fontName && state.referenceTrace?.master === masterName) {
+    if (state.referenceTrace?.fontId === fontId && state.referenceTrace?.master === masterName) {
         state.referenceTrace = null;
     } else {
-        state.referenceTrace = { fontName, master: masterName };
+        const typeface = state.addedTypefaces.find(t => t.id === typefaceId);
+        state.referenceTrace = { typefaceId, fontId, typefaceName: typeface?.name, master: masterName };
     }
     renderFontList();
     updateChart();
 }
 
 function getFirstEnabledMaster() {
-    for (const font of state.addedFonts) {
-        for (const master of font.masters) {
-            if (font.enabledMasters.has(master)) {
-                return { fontName: font.name, master };
+    for (const typeface of state.addedTypefaces) {
+        for (const font of typeface.fonts) {
+            for (const master of font.masters) {
+                if (font.enabledMasters.has(master)) {
+                    return { typefaceId: typeface.id, fontId: font.id, typefaceName: typeface.name, master };
+                }
             }
         }
     }
@@ -416,24 +459,39 @@ function getFirstEnabledMaster() {
 }
 
 // Event handlers
-async function handleAddFont(fontName, modalItem) {
-    if (state.addedFonts.some(f => f.name === fontName)) {
+async function handleAddTypeface(typefaceId, typefaceName, modalItem) {
+    if (state.addedTypefaces.some(t => t.id === typefaceId)) {
         return;
     }
 
     // Mark modal item as loading
     modalItem.classList.add('loading');
-    modalItem.innerHTML = `${icons.spinner} ${fontName}`;
+    modalItem.innerHTML = `${icons.spinner} ${typefaceName}`;
 
     try {
         const charset = elements.charsetSelect.value;
-        const fontData = await fetchGrayscaleData(fontName, charset);
+        const typefaceData = await fetchTypefaceFonts(typefaceId, charset);
 
-        state.fontData.set(fontName, fontData);
-        state.addedFonts.push({
-            name: fontName,
-            masters: fontData.masters,
-            enabledMasters: new Set(fontData.masters),
+        // Prepare fonts with enabledMasters
+        const fonts = typefaceData.fonts.map(f => ({
+            id: f.id,
+            name: f.name,
+            masters: f.masters,
+            enabledMasters: new Set(f.masters),
+        }));
+
+        // Fetch all font data
+        const fontDataMap = await fetchAllFontData(typefaceId, fonts, charset);
+
+        // Store font data
+        for (const [fontId, data] of fontDataMap) {
+            state.fontData.set(fontId, data);
+        }
+
+        state.addedTypefaces.push({
+            id: typefaceId,
+            name: typefaceName,
+            fonts: fonts,
             enabled: true,
             color: getNextFontColor(),
         });
@@ -442,26 +500,29 @@ async function handleAddFont(fontName, modalItem) {
         updateChart();
 
         // Mark as added (keep disabled)
-        modalItem.innerHTML = `✓ ${fontName}`;
+        modalItem.innerHTML = `✓ ${typefaceName}`;
         modalItem.classList.remove('loading');
         modalItem.classList.add('added');
     } catch (error) {
-        console.error('Failed to load font:', error);
+        console.error('Failed to load typeface:', error);
         // Restore item on error
         modalItem.classList.remove('loading');
-        modalItem.textContent = fontName;
+        modalItem.textContent = typefaceName;
     }
 }
 
-function handleFontToggle(e) {
-    const fontIndex = parseInt(e.target.dataset.font);
-    const font = state.addedFonts[fontIndex];
-    font.enabled = e.target.checked;
+function handleTypefaceToggle(e) {
+    const typefaceIndex = parseInt(e.target.dataset.typeface);
+    const typeface = state.addedTypefaces[typefaceIndex];
+    typeface.enabled = e.target.checked;
 
-    if (font.enabled) {
-        font.enabledMasters = new Set(font.masters);
-    } else {
-        font.enabledMasters.clear();
+    // Toggle all masters in all fonts
+    for (const font of typeface.fonts) {
+        if (typeface.enabled) {
+            font.enabledMasters = new Set(font.masters);
+        } else {
+            font.enabledMasters.clear();
+        }
     }
 
     renderFontList();
@@ -469,9 +530,13 @@ function handleFontToggle(e) {
 }
 
 function handleMasterToggle(e) {
-    const fontIndex = parseInt(e.target.dataset.font);
+    const typefaceIndex = parseInt(e.target.dataset.typeface);
+    const fontId = parseInt(e.target.dataset.fontId);
     const masterName = e.target.dataset.master;
-    const font = state.addedFonts[fontIndex];
+    const typeface = state.addedTypefaces[typefaceIndex];
+    const font = typeface.fonts.find(f => f.id === fontId);
+
+    if (!font) return;
 
     if (e.target.checked) {
         font.enabledMasters.add(masterName);
@@ -479,35 +544,47 @@ function handleMasterToggle(e) {
         font.enabledMasters.delete(masterName);
     }
 
-    font.enabled = font.enabledMasters.size === font.masters.length;
+    // Update typeface enabled state based on all fonts/masters
+    const allMastersEnabled = typeface.fonts.every(f =>
+        f.masters.every(m => f.enabledMasters.has(m))
+    );
+    typeface.enabled = allMastersEnabled;
+
     renderFontList();
     updateChart();
 }
 
-function handleFontRemove(e) {
-    const fontIndex = parseInt(e.currentTarget.dataset.font);
-    const fontName = state.addedFonts[fontIndex].name;
-    state.addedFonts.splice(fontIndex, 1);
-    state.fontData.delete(fontName);
+function handleTypefaceRemove(e) {
+    const typefaceIndex = parseInt(e.currentTarget.dataset.typeface);
+    const typeface = state.addedTypefaces[typefaceIndex];
+
+    // Remove all font data for this typeface
+    for (const font of typeface.fonts) {
+        state.fontData.delete(font.id);
+    }
+
+    state.addedTypefaces.splice(typefaceIndex, 1);
     renderFontList();
     updateChart();
 }
 
 function openFontModal() {
-    const addedNames = new Set(state.addedFonts.map(f => f.name));
+    const addedIds = new Set(state.addedTypefaces.map(t => t.id));
 
-    if (state.availableFonts.length === 0) {
+    if (state.availableTypefaces.length === 0) {
         elements.fontModalList.innerHTML = '<div class="no-fonts">没有可用字体</div>';
     } else {
-        elements.fontModalList.innerHTML = state.availableFonts.map(font => {
-            const isAdded = addedNames.has(font);
+        elements.fontModalList.innerHTML = state.availableTypefaces.map(typeface => {
+            const isAdded = addedIds.has(typeface.id);
             const className = isAdded ? 'modal-item added' : 'modal-item';
-            const content = isAdded ? `✓ ${font}` : font;
-            return `<div class="${className}" data-font="${font}">${content}</div>`;
+            const content = isAdded ? `✓ ${typeface.name}` : typeface.name;
+            return `<div class="${className}" data-typeface-id="${typeface.id}" data-typeface-name="${typeface.name}">${content}</div>`;
         }).join('');
 
         elements.fontModalList.querySelectorAll('.modal-item:not(.added)').forEach(item => {
-            item.addEventListener('click', () => handleAddFont(item.dataset.font, item));
+            const typefaceId = parseInt(item.dataset.typefaceId);
+            const typefaceName = item.dataset.typefaceName;
+            item.addEventListener('click', () => handleAddTypeface(typefaceId, typefaceName, item));
         });
     }
 
@@ -520,28 +597,42 @@ async function handleCharsetChange() {
 
     state.currentCharset = newCharset;
 
-    if (state.addedFonts.length === 0) return;
+    if (state.addedTypefaces.length === 0) return;
 
     try {
-        // Reload data for all fonts with new charset
-        const reloadPromises = state.addedFonts.map(async (font) => {
-            const fontData = await fetchGrayscaleData(font.name, newCharset);
-            state.fontData.set(font.name, fontData);
+        // Reload data for all typefaces with new charset
+        for (const typeface of state.addedTypefaces) {
+            const typefaceData = await fetchTypefaceFonts(typeface.id, newCharset);
 
-            // Update font masters if they changed
-            font.masters = fontData.masters;
-            // Keep only masters that still exist
-            font.enabledMasters = new Set(
-                [...font.enabledMasters].filter(m => fontData.masters.includes(m))
-            );
-            // If no masters enabled, enable all
-            if (font.enabledMasters.size === 0) {
-                font.enabledMasters = new Set(fontData.masters);
+            // Update fonts with new masters
+            for (const fontData of typefaceData.fonts) {
+                const font = typeface.fonts.find(f => f.id === fontData.id);
+                if (font) {
+                    font.masters = fontData.masters;
+                    // Keep only masters that still exist
+                    font.enabledMasters = new Set(
+                        [...font.enabledMasters].filter(m => fontData.masters.includes(m))
+                    );
+                    // If no masters enabled, enable all
+                    if (font.enabledMasters.size === 0) {
+                        font.enabledMasters = new Set(fontData.masters);
+                    }
+                }
             }
-            font.enabled = font.enabledMasters.size === font.masters.length;
-        });
 
-        await Promise.all(reloadPromises);
+            // Refetch all font data
+            const fontDataMap = await fetchAllFontData(typeface.id, typeface.fonts, newCharset);
+            for (const [fontId, data] of fontDataMap) {
+                state.fontData.set(fontId, data);
+            }
+
+            // Update typeface enabled state
+            const allMastersEnabled = typeface.fonts.every(f =>
+                f.masters.every(m => f.enabledMasters.has(m))
+            );
+            typeface.enabled = allMastersEnabled;
+        }
+
         renderFontList();
         updateChart();
     } catch (error) {
@@ -578,9 +669,9 @@ async function init() {
     state.currentCharset = elements.charsetSelect.value;
 
     try {
-        state.availableFonts = await fetchAvailableFonts();
+        state.availableTypefaces = await fetchAvailableTypefaces();
     } catch (error) {
-        console.error('Failed to load available fonts:', error);
+        console.error('Failed to load available typefaces:', error);
     }
 
     // Event listeners

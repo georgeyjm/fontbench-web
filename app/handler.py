@@ -260,9 +260,9 @@ def _process_opentype_file(db, job: Job, filepath: Path, metrics_list: list[Metr
         raise ValueError(f'Failed to load font: {e}')
 
     # Fetch and update font information
-    typeface = db.query(Typeface).filter(Typeface.name == font.family_name).first()
+    typeface = db.query(Typeface).filter(Typeface.name == font.typographic_family).first()
     if not typeface:
-        typeface = Typeface(name=font.family_name)
+        typeface = Typeface(name=font.typographic_family)
         db.add(typeface)
         db.flush()
 
@@ -270,7 +270,7 @@ def _process_opentype_file(db, job: Job, filepath: Path, metrics_list: list[Metr
     font_obj = Font(
         typeface_id=typeface.id,
         name=font.full_name,
-        subfamily=font.subfamily,
+        subfamily=font.typographic_subfamily,
         postscript_name=font.postscript_name,
         version=font.version,
         filename=filepath.name,
