@@ -50,7 +50,7 @@ async def get_metric_data(db: SessionDep, metric: str, font_name: str, charset: 
     Get data for a specific metric and font.
     Returns data formatted for visualization.
     '''
-    metric_dir = get_metric_dir(metric, db)
+    metric_dir = get_metric_dir(db, metric)
     jsonl_path = metric_dir / f'{font_name}.jsonl'
 
     if not jsonl_path.exists():
@@ -94,7 +94,7 @@ async def get_metric_data(db: SessionDep, metric: str, font_name: str, charset: 
 @router.get('/{metric}')
 async def list_metric_files(db: SessionDep, metric: str):
     '''List available precomputed files for a specific metric.'''
-    metric_dir = get_metric_dir(metric, db)
+    metric_dir = get_metric_dir(db, metric)
     if not metric_dir.exists():
         return {'files': []}
     files = [f.stem for f in metric_dir.glob('*.jsonl')]

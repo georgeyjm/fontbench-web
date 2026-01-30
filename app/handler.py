@@ -276,6 +276,7 @@ def _process_opentype_file(db, job: Job, filepath: Path, metrics_list: list[Metr
         filename=filepath.name,
     )
     db.add(font_obj)
+    db.flush()
     job.font_id = font_obj.id
     job.progress = 10
     db.commit()
@@ -359,7 +360,7 @@ def _process_glyphs_file(db, job: Job, filepath: Path, metrics_list: list[Metric
     # The first master's name can serve as a subfamily indicator
     first_master_name = font.masters[0].name if font.masters else None
     master_ids = {master.id for master in font.masters}
-    
+
     # Get localized family name
     family_name = font.familyName
     full_name = font.properties['postscriptFullNames'] or font.properties['postscriptFontName']

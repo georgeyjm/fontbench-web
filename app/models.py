@@ -57,7 +57,6 @@ class Typeface(Base):
         result = {
             'id': self.id,
             'name': self.name,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
             'font_count': len(self.fonts) if self.fonts else 0,
         }
         if include_fonts:
@@ -95,12 +94,11 @@ class Font(Base):
     def serialize(self, include_metrics: bool = False) -> dict:
         result = {
             'id': self.id,
-            'typeface_id': self.typeface_id,
-            'typeface_name': self.typeface.name if self.typeface else None,
-            'filename': self.filename,
-            'display_name': self.display_name,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
-            'job_count': len(self.jobs) if self.jobs else 0,
+            'typeface': self.typeface.serialize() if self.typeface else None,
+            'name': self.name,
+            'subfamily': self.subfamily,
+            'version': self.version,
+            'postscript_name': self.postscript_name,
         }
         if include_metrics:
             result['computed_metrics'] = [fm.serialize() for fm in self.font_metrics]
@@ -137,12 +135,9 @@ class FontMetric(Base):
         return {
             'id': self.id,
             'font_id': self.font_id,
-            'metric_id': self.metric_id,
-            'metric_name': self.metric.name if self.metric else None,
-            'metric_display_name': self.metric.display_name if self.metric else None,
+            'metric': self.metric.serialize() if self.metric else None,
             'job_id': self.job_id,
-            'data_path': self.data_path,
-            'created_at': self.created_at.isoformat() if self.created_at else None,
+            # 'data_path': self.data_path,
         }
 
 
@@ -181,7 +176,7 @@ class Job(Base):
         return {
             'job_id': self.id,
             'font_id': self.font_id,
-            'font_name': self.font.display_name if self.font else None,
+            'font_name': self.font.name if self.font else None,
             'typeface_name': self.font.typeface.name if self.font and self.font.typeface else None,
             'status': self.status,
             'progress': self.progress,
