@@ -193,8 +193,7 @@ def _process_opentype_file(db, job: Job, filepath: Path, metrics_list: list[Metr
                     data[glyph.glyph_id] = {'id': glyph.glyph_id, 'string': glyph.string, 'grayscale': {master_name: grayscale}}
 
         # Save data to JSONL file
-        jsonl_file = DATA_DIR / metric.name / f'{font.full_name}.jsonl'  # TODO: Make sure filename is valid
-        jsonl_file.parent.mkdir(parents=True, exist_ok=True)
+        jsonl_file = DATA_DIR / metric.name / f'{font_obj.name}.jsonl'  # TODO: Make sure filename is valid
         with jsonl_file.open('w', encoding='utf-8') as f:
             for line in data.values():
                 f.write(json.dumps(line, ensure_ascii=False) + '\n')
@@ -233,7 +232,8 @@ def _process_glyphs_file(db, job: Job, filepath: Path, metrics_list: list[Metric
 
     # Get localized family name
     family_name = font.familyName
-    full_name = font.properties['postscriptFullNames'] or font.properties['postscriptFontName']
+    full_name = f'{family_name} {first_master_name}'
+    postscript_name = font.properties['postscriptFullNames'] or font.properties['postscriptFontName']
     for prop in font.properties:
         if prop.key == 'familyNames':
             if hasattr(prop, '_localized_values') and prop._localized_values and prop._localized_values.get('ZHS'):  # There might be more than ZHS
@@ -249,9 +249,9 @@ def _process_glyphs_file(db, job: Job, filepath: Path, metrics_list: list[Metric
 
     font_obj = Font(
         typeface_id=typeface.id,
-        name=family_name,
+        name=full_name,
         subfamily=first_master_name,
-        postscript_name=full_name,
+        postscript_name=postscript_name,
         version=version_string,
         filename=filepath.name,
         checksum=checksum,
@@ -306,8 +306,7 @@ def _process_glyphs_file(db, job: Job, filepath: Path, metrics_list: list[Metric
                 data[glyph.name] = glyph_data
 
         # Save data to JSONL file
-        jsonl_file = DATA_DIR / metric.name / f'{family_name}.jsonl'
-        jsonl_file.parent.mkdir(parents=True, exist_ok=True)
+        jsonl_file = DATA_DIR / metric.name / f'{font_obj.name}.jsonl'
         with jsonl_file.open('w', encoding='utf-8') as f:
             for line in data.values():
                 f.write(json.dumps(line, ensure_ascii=False) + '\n')

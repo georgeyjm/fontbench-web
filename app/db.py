@@ -4,7 +4,7 @@ from fastapi import Depends
 from sqlalchemy import create_engine
 from sqlalchemy.orm import Session, sessionmaker
 
-from app.config import DATABASE_PATH, AVAILABLE_METRICS
+from app.config import DATABASE_PATH, AVAILABLE_METRICS, DATA_DIR
 from app.models import Base, Metric
 
 
@@ -22,10 +22,11 @@ def seed_metrics():
     db = SessionLocal()
     try:
         for metric_data in AVAILABLE_METRICS:
-            existing = db.query(Metric).filter(Metric.name == metric_data['name']).first()
-            if not existing:
+            metric = db.query(Metric).filter(Metric.name == metric_data['name']).first()
+            if not metric:
                 metric = Metric(**metric_data)
                 db.add(metric)
+            (DATA_DIR / metric.name).mkdir(parents=True, exist_ok=True)
         db.commit()
     finally:
         db.close()
