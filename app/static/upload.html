@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FontBench - 上传</title>
+    <link rel="stylesheet" href="/static/styles.css">
+</head>
+<body>
+    <div class="app-layout">
+        <!-- Side Navigation -->
+        <nav class="side-nav">
+            <div class="nav-top">
+                <a href="/" class="nav-icon" title="分析">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M3 3v18h18"/>
+                        <path d="M18 17V9"/>
+                        <path d="M13 17V5"/>
+                        <path d="M8 17v-3"/>
+                    </svg>
+                </a>
+                <a href="/upload" class="nav-icon active" title="上传">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                        <polyline points="17 8 12 3 7 8"/>
+                        <line x1="12" y1="3" x2="12" y2="15"/>
+                    </svg>
+                </a>
+            </div>
+            <div class="nav-bottom">
+                <div class="nav-icon" title="设置">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="3"/>
+                        <path d="M12 1v4M12 19v4M4.22 4.22l2.83 2.83M16.95 16.95l2.83 2.83M1 12h4M19 12h4M4.22 19.78l2.83-2.83M16.95 7.05l2.83-2.83"/>
+                    </svg>
+                </div>
+            </div>
+        </nav>
+
+        <!-- Main Content -->
+        <div class="main-content">
+            <!-- Upload Panel -->
+            <div class="upload-panel">
+                <div class="panel-header">
+                    <div class="panel-title">上传字体</div>
+                </div>
+
+                <!-- Drop Zone -->
+                <div class="drop-zone" id="dropZone">
+                    <div class="drop-zone-content">
+                        <svg class="drop-zone-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+                            <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+                            <polyline points="17 8 12 3 7 8"/>
+                            <line x1="12" y1="3" x2="12" y2="15"/>
+                        </svg>
+                        <p class="drop-zone-text">拖拽字体文件到这里</p>
+                        <p class="drop-zone-hint">或点击选择文件</p>
+                        <p class="drop-zone-formats">支持 TTF, OTF, TTC, OTC, Glyphs</p>
+                    </div>
+                    <input type="file" id="fileInput" accept=".ttf,.otf,.ttc,.otc,.glyphs,.glyphx" hidden>
+                </div>
+
+                <!-- Selected File Info -->
+                <div class="selected-file" id="selectedFile" style="display: none;">
+                    <div class="file-info">
+                        <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                            <polyline points="14 2 14 8 20 8"/>
+                        </svg>
+                        <span class="file-name" id="fileName"></span>
+                        <button class="file-remove" id="fileRemove">
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <line x1="18" y1="6" x2="6" y2="18"/>
+                                <line x1="6" y1="6" x2="18" y2="18"/>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Metrics Selection -->
+                <div class="metrics-section">
+                    <div class="section-title">处理指标</div>
+                    <div class="metrics-list" id="metricsList">
+                        <!-- Populated by JS -->
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <button class="submit-btn" id="submitBtn" disabled>
+                    <span class="submit-text">开始处理</span>
+                    <span class="submit-spinner" style="display: none;"></span>
+                </button>
+            </div>
+
+            <!-- Jobs List -->
+            <div class="jobs-panel">
+                <div class="panel-header">
+                    <div class="panel-title">处理任务</div>
+                    <button class="refresh-btn" id="refreshBtn" title="刷新">
+                        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                            <polyline points="23 4 23 10 17 10"/>
+                            <path d="M20.49 15a9 9 0 1 1-2.12-9.36L23 10"/>
+                        </svg>
+                    </button>
+                </div>
+                <div class="jobs-list" id="jobsList">
+                    <div class="empty-jobs">暂无处理任务</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="/static/upload.js"></script>
+</body>
+</html>

@@ -42,15 +42,15 @@ const icons = {
 };
 
 // API functions
-async function fetchAvailableFonts() {
-    const response = await fetch('/api/grayscale');
+async function fetchAvailableFonts(metric = 'grayscale') {
+    const response = await fetch(`/api/data/${metric}`);
     const data = await response.json();
     return data.files;
 }
 
-async function fetchGrayscaleData(fontName, charset) {
+async function fetchGrayscaleData(fontName, charset, metric = 'grayscale') {
     // Fetch initial data to get masters list
-    const response = await fetch(`/api/grayscale/${encodeURIComponent(fontName)}?charset=${charset}`);
+    const response = await fetch(`/api/data/${metric}/${encodeURIComponent(fontName)}?charset=${charset}`);
     const data = await response.json();
 
     const fontData = {
@@ -61,7 +61,7 @@ async function fetchGrayscaleData(fontName, charset) {
     // Fetch data for each master in parallel
     const masterPromises = data.masters.map(async (master) => {
         const masterResponse = await fetch(
-            `/api/grayscale/${encodeURIComponent(fontName)}?charset=${charset}&master=${encodeURIComponent(master)}`
+            `/api/data/${metric}/${encodeURIComponent(fontName)}?charset=${charset}&master=${encodeURIComponent(master)}`
         );
         const masterData = await masterResponse.json();
         return {
@@ -373,7 +373,7 @@ function highlightTrace(traceName) {
     } else {
         // Dim all except the hovered trace
         const opacities = chartDiv.data.map(trace =>
-            trace.name === traceName ? 1 : 0.1
+            trace.name === traceName ? 1 : 0.25
         );
         Plotly.restyle('chartContainer', { opacity: opacities });
     }

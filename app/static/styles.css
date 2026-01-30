@@ -39,6 +39,10 @@ body {
     margin-top: auto;
 }
 
+a.nav-icon {
+    text-decoration: none;
+}
+
 .nav-icon {
     width: 40px;
     height: 40px;
@@ -507,4 +511,367 @@ body {
     color: #999;
     text-align: center;
     padding: 24px;
+}
+
+/* ============================================================================
+   Upload Page Styles
+   ============================================================================ */
+
+/* Upload Panel */
+.upload-panel {
+    width: 360px;
+    background: #fff;
+    border-right: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    flex-shrink: 0;
+    padding: 24px;
+    gap: 20px;
+}
+
+/* Drop Zone */
+.drop-zone {
+    border: 2px dashed #ddd;
+    border-radius: 12px;
+    padding: 40px 24px;
+    text-align: center;
+    cursor: pointer;
+    transition: all 0.2s;
+    background: #fafafa;
+}
+
+.drop-zone:hover {
+    border-color: #bbb;
+    background: #f5f5f5;
+}
+
+.drop-zone.drag-over {
+    border-color: #1a1a1a;
+    background: #f0f0f0;
+}
+
+.drop-zone.has-file {
+    border-style: solid;
+    border-color: #1a1a1a;
+    background: #fff;
+    padding: 24px;
+}
+
+.drop-zone-content {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.drop-zone.has-file .drop-zone-content {
+    display: none;
+}
+
+.drop-zone-icon {
+    width: 48px;
+    height: 48px;
+    color: #ccc;
+    margin-bottom: 8px;
+}
+
+.drop-zone-text {
+    font-size: 0.95rem;
+    color: #666;
+}
+
+.drop-zone-hint {
+    font-size: 0.85rem;
+    color: #999;
+}
+
+.drop-zone-formats {
+    font-size: 0.75rem;
+    color: #bbb;
+    margin-top: 8px;
+}
+
+/* Selected File */
+.selected-file {
+    margin-top: -12px;
+}
+
+.file-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 12px 16px;
+    background: #f5f5f5;
+    border-radius: 8px;
+}
+
+.file-icon {
+    width: 20px;
+    height: 20px;
+    color: #666;
+    flex-shrink: 0;
+}
+
+.file-name {
+    flex: 1;
+    font-size: 0.9rem;
+    color: #1a1a1a;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.file-remove {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    color: #999;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.file-remove:hover {
+    background: #e0e0e0;
+    color: #666;
+}
+
+/* Metrics Section */
+.metrics-section {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.section-title {
+    font-size: 0.75rem;
+    font-weight: 500;
+    color: #999;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.metrics-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.metric-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    background: #fafafa;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.15s;
+}
+
+.metric-item:hover {
+    background: #f0f0f0;
+}
+
+.metric-checkbox {
+    width: 16px;
+    height: 16px;
+    accent-color: #1a1a1a;
+    cursor: pointer;
+}
+
+.metric-name {
+    font-size: 0.9rem;
+    color: #1a1a1a;
+}
+
+/* Submit Button */
+.submit-btn {
+    padding: 14px 24px;
+    background: #1a1a1a;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-size: 0.95rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+}
+
+.submit-btn:hover:not(:disabled) {
+    background: #333;
+}
+
+.submit-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.submit-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-top-color: white;
+    border-radius: 50%;
+    animation: spin 0.8s linear infinite;
+}
+
+/* Jobs Panel */
+.jobs-panel {
+    flex: 1;
+    background: #fafafa;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+}
+
+.jobs-panel .panel-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 24px 24px 16px;
+    background: #fff;
+    border-bottom: 1px solid #eee;
+}
+
+.refresh-btn {
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: #f0f0f0;
+    border-radius: 6px;
+    cursor: pointer;
+    color: #666;
+    transition: all 0.2s;
+}
+
+.refresh-btn:hover {
+    background: #e0e0e0;
+    color: #1a1a1a;
+}
+
+.refresh-btn svg {
+    width: 16px;
+    height: 16px;
+}
+
+.jobs-list {
+    flex: 1;
+    overflow-y: auto;
+    padding: 16px 24px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.empty-jobs {
+    color: #999;
+    text-align: center;
+    padding: 48px 24px;
+    font-size: 0.9rem;
+}
+
+/* Job Item */
+.job-item {
+    background: #fff;
+    border-radius: 10px;
+    padding: 16px;
+    border: 1px solid #eee;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.job-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-name {
+    font-size: 0.95rem;
+    font-weight: 500;
+    color: #1a1a1a;
+}
+
+.job-delete {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    background: none;
+    color: #ccc;
+    cursor: pointer;
+    border-radius: 4px;
+    transition: all 0.2s;
+}
+
+.job-delete:hover {
+    background: #f0f0f0;
+    color: #999;
+}
+
+.job-metrics {
+    font-size: 0.8rem;
+    color: #999;
+}
+
+.job-progress {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    overflow: hidden;
+    margin: 4px 0;
+}
+
+.job-progress-bar {
+    height: 100%;
+    background: #1a1a1a;
+    border-radius: 2px;
+    transition: width 0.3s ease;
+}
+
+.job-footer {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.job-status-text {
+    font-size: 0.8rem;
+    color: #666;
+}
+
+.job-time {
+    font-size: 0.75rem;
+    color: #bbb;
+}
+
+/* Job Status Colors */
+.job-item.job-status-pending .job-status-text {
+    color: #999;
+}
+
+.job-item.job-status-processing .job-status-text {
+    color: #0066cc;
+}
+
+.job-item.job-status-completed .job-status-text {
+    color: #22863a;
+}
+
+.job-item.job-status-failed .job-status-text {
+    color: #cb2431;
 }
