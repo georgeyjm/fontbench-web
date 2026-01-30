@@ -7,7 +7,7 @@ from fontbench.utils import get_font_weight_value
 
 from app.models import Font, FontMetric, Metric, Typeface
 from app.db import SessionDep
-from app.handler import load_grayscale_jsonl
+from app.data import load_metric_data
 
 
 router = APIRouter(prefix='/api/data', tags=['data'])
@@ -22,17 +22,6 @@ def get_metric_obj(db: Session, metric: str) -> Metric:
             status_code=400, detail=f'Invalid metric: {metric}. Available: {valid_metrics}'
         )
     return db_metric
-
-
-def load_metric_data(metric: str, jsonl_path: Path, charset: Literal['3500', '7000', 'chinese'] = '3500'):
-    '''
-    Load data for a specific metric from a JSONL file.
-    This is a generic loader that can be extended for different metrics.
-    '''
-    if metric == 'grayscale':
-        return load_grayscale_jsonl(str(jsonl_path), charset=charset)
-    else:
-        raise HTTPException(status_code=400, detail=f'Loading for metric {metric} not yet implemented')
 
 
 @router.get('')
@@ -53,7 +42,7 @@ async def list_typefaces_with_metric(db: SessionDep, metric: str):
         .filter(FontMetric.metric_id == metric_obj.id)
         .join(Font)
         .all()
-    )
+)
 
     # Get unique typefaces
     typeface_map = {}
@@ -101,11 +90,7 @@ async def get_typeface_fonts(db: SessionDep, metric: str, typeface_id: int, char
         if not fm.font or not fm.data_path:
             continue
 
-        jsonl_path = Path(fm.data_path)
-        if not jsonl_path.exists():
-            continue
-
-        df = load_metric_data(metric, jsonl_path, charset=charset)
+        df = load_metric_data(fm, charset=charset)
         masters = df['master'].unique().tolist()
         masters = sorted(masters, key=get_font_weight_value, reverse=True)
 
@@ -141,18 +126,10 @@ async def get_font_metric_data(db: SessionDep, metric: str, typeface_id: int, fo
         .filter(FontMetric.font_id == font.id, FontMetric.metric_id == metric_obj.id)
         .first()
     )
-    if not font_metric or not font_metric.data_path:
-        raise HTTPException(
-            status_code=404, detail=f'{metric.capitalize()} data not found for this font'
-        )
 
-    jsonl_path = Path(font_metric.data_path)
-    if not jsonl_path.exists():
-        raise HTTPException(
-            status_code=404, detail=f'{metric.capitalize()} data file missing for this font'
-        )
-
-    df = load_metric_data(metric, jsonl_path, charset=charset)
+    df = load_metric_data(font_metric, charset=charset)
+    if df is None:
+        raise HTTPException(status_code=404, detail=f'{metric} data not found for this font')
 
     # Filter by master if specified
     masters = df['master'].unique().tolist()

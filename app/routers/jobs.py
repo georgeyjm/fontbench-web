@@ -72,16 +72,6 @@ async def create_upload_job(db: SessionDep, background_tasks: BackgroundTasks, f
     with filepath.open('wb') as f:
         f.write(content)
 
-    # # Create Font record
-    # font = Font(
-    #     typeface_id=typeface_id,
-    #     filename=file.filename,
-    #     display_name=font_name,
-    #     created_at=datetime.now(),
-    # )
-    # db.add(font)
-    # db.flush()  # Get font.id
-
     # Create Job record
     job = Job(
         status='pending',

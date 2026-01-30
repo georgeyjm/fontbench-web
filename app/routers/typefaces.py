@@ -14,20 +14,6 @@ async def list_typefaces(db: SessionDep):
     return {'typefaces': [t.serialize() for t in typefaces]}
 
 
-# @router.post('', tags=['typefaces'])
-# async def create_typeface(db: SessionDep, name: str = Form(...)):
-#     '''Create a new typeface.'''
-#     existing = db.query(Typeface).filter(Typeface.name == name).first()
-#     if existing:
-#         raise HTTPException(status_code=400, detail=f'Typeface "{name}" already exists')
-
-#     typeface = Typeface(name=name, created_at=datetime.now())
-#     db.add(typeface)
-#     db.commit()
-#     db.refresh(typeface)
-#     return typeface.serialize()
-
-
 @router.get('/{typeface_id}', tags=['typefaces'])
 async def get_typeface(db: SessionDep, typeface_id: int, include_fonts: bool = False):
     '''Get a typeface by ID.'''
@@ -46,11 +32,6 @@ async def delete_typeface(typeface_id: int, db: SessionDep):
     db.delete(typeface)
     db.commit()
     return {'status': 'deleted'}
-
-
-# ============================================================================
-# Font Endpoints
-# ============================================================================
 
 
 @router.get('/fonts', tags=['fonts'])

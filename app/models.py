@@ -78,9 +78,8 @@ class Font(Base):
     subfamily: Mapped[str] = mapped_column(String(255), nullable=True)
     version: Mapped[str] = mapped_column(String(20), nullable=True)
     postscript_name: Mapped[str] = mapped_column(String(255), nullable=True)
-    # original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
     filename: Mapped[str] = mapped_column(String(255), nullable=False)
-    # display_name: Mapped[str] = mapped_column(String(255))
+    checksum: Mapped[Optional[str]] = mapped_column(String(64), nullable=True, index=True)  # SHA-256 hex
 
     created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.now)
 
