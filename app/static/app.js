@@ -1,3 +1,14 @@
+// Cookie utilities
+function setCookie(name, value, days = 365) {
+    const expires = new Date(Date.now() + days * 864e5).toUTCString();
+    document.cookie = `${name}=${encodeURIComponent(value)}; expires=${expires}; path=/`;
+}
+
+function getCookie(name) {
+    const match = document.cookie.match(new RegExp('(^| )' + name + '=([^;]+)'));
+    return match ? decodeURIComponent(match[2]) : null;
+}
+
 // State
 const state = {
     availableTypefaces: [],  // Array of { id, name }
@@ -7,6 +18,7 @@ const state = {
     binSize: 0.01,
     currentCharset: '3500',
     referenceTrace: null, // { typefaceId, fontId, fontName, master } - used for scatter plot sorting
+    useWebGL: true, // Use WebGL (scattergl) for faster rendering
 };
 
 // Color palette - different hues for different fonts
@@ -26,6 +38,10 @@ const elements = {
     chartSubtitle: document.getElementById('chartSubtitle'),
     binControl: document.getElementById('binControl'),
     binSizeInput: document.getElementById('binSize'),
+    settingsBtn: document.getElementById('settingsBtn'),
+    settingsModal: document.getElementById('settingsModal'),
+    settingsClose: document.getElementById('settingsClose'),
+    webglToggle: document.getElementById('webglToggle'),
 };
 
 // Icons
@@ -284,10 +300,11 @@ function updateChart() {
                     textData = xData;
                 }
 
+                const scatterType = state.useWebGL ? 'scattergl' : 'scatter';
                 traces.push({
                     x: textData,
                     y: yData,
-                    type: 'scatter',
+                    type: scatterType,
                     mode: 'markers',
                     name: traceName,
                     marker: { size: 4, color },
@@ -298,11 +315,12 @@ function updateChart() {
                 const n = masterData.values.length;
                 const xData = masterData.values.map((_, i) => (i / (n - 1)) * 100);
 
+                const scatterType = state.useWebGL ? 'scattergl' : 'scatter';
                 traces.push({
                     x: xData,
                     y: masterData.values,
                     text: masterData.chars,
-                    type: 'scatter',
+                    type: scatterType,
                     mode: 'markers',
                     name: traceName,
                     marker: { size: 4, color },
@@ -665,6 +683,13 @@ function handleBinSizeChange(e) {
 
 // Initialize
 async function init() {
+    // Load settings from cookies
+    const webglCookie = getCookie('useWebGL');
+    if (webglCookie !== null) {
+        state.useWebGL = webglCookie === 'true';
+        elements.webglToggle.checked = state.useWebGL;
+    }
+
     // Set initial charset from select
     state.currentCharset = elements.charsetSelect.value;
 
@@ -682,6 +707,18 @@ async function init() {
     });
     elements.charsetSelect.addEventListener('change', handleCharsetChange);
     elements.binSizeInput.addEventListener('change', handleBinSizeChange);
+
+    // Settings modal
+    elements.settingsBtn.addEventListener('click', () => elements.settingsModal.classList.add('active'));
+    elements.settingsClose.addEventListener('click', () => elements.settingsModal.classList.remove('active'));
+    elements.settingsModal.addEventListener('click', (e) => {
+        if (e.target === elements.settingsModal) elements.settingsModal.classList.remove('active');
+    });
+    elements.webglToggle.addEventListener('change', (e) => {
+        state.useWebGL = e.target.checked;
+        setCookie('useWebGL', state.useWebGL);
+        updateChart();
+    });
 
     document.querySelectorAll('.chart-type-btn').forEach(btn => {
         btn.addEventListener('click', handleChartTypeChange);
