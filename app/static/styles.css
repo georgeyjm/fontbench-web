@@ -591,9 +591,15 @@ a.nav-icon {
     margin-top: 8px;
 }
 
-/* Selected File */
-.selected-file {
+/* Selected Files */
+.selected-files {
     margin-top: -12px;
+}
+
+.selected-files-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .file-info {
@@ -638,6 +644,27 @@ a.nav-icon {
 .file-remove:hover {
     background: #e0e0e0;
     color: #666;
+}
+
+.add-more-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    padding: 10px 16px;
+    border: 1px dashed #ccc;
+    background: none;
+    border-radius: 8px;
+    color: #666;
+    font-size: 0.85rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.add-more-btn:hover {
+    border-color: #999;
+    color: #333;
+    background: #fafafa;
 }
 
 /* Metrics Section */

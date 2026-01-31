@@ -1,6 +1,6 @@
 // State
 const state = {
-    selectedFile: null,
+    selectedFiles: [],  // Array of File objects
     availableMetrics: [],  // Array of { name, display_name, description }
     selectedMetrics: new Set(),
     jobs: [],
@@ -12,9 +12,8 @@ const state = {
 const elements = {
     dropZone: document.getElementById('dropZone'),
     fileInput: document.getElementById('fileInput'),
-    selectedFile: document.getElementById('selectedFile'),
-    fileName: document.getElementById('fileName'),
-    fileRemove: document.getElementById('fileRemove'),
+    selectedFiles: document.getElementById('selectedFiles'),
+    selectedFilesList: document.getElementById('selectedFilesList'),
     metricsList: document.getElementById('metricsList'),
     submitBtn: document.getElementById('submitBtn'),
     jobsList: document.getElementById('jobsList'),
@@ -172,18 +171,65 @@ function getTimeText(job) {
 }
 
 function updateSubmitButton() {
-    const hasFile = state.selectedFile !== null;
+    const hasFiles = state.selectedFiles.length > 0;
     const hasMetrics = state.selectedMetrics.size > 0;
-    elements.submitBtn.disabled = !hasFile || !hasMetrics;
+    elements.submitBtn.disabled = !hasFiles || !hasMetrics;
 }
 
-function showSelectedFile() {
-    if (state.selectedFile) {
-        elements.fileName.textContent = state.selectedFile.name;
-        elements.selectedFile.style.display = 'block';
+function showSelectedFiles() {
+    if (!elements.selectedFiles || !elements.selectedFilesList) {
+        console.error('Selected files elements not found - please refresh the page');
+        return;
+    }
+
+    if (state.selectedFiles.length > 0) {
+        const filesHtml = state.selectedFiles.map((file, index) => `
+            <div class="file-info" data-index="${index}">
+                <svg class="file-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/>
+                    <polyline points="14 2 14 8 20 8"/>
+                </svg>
+                <span class="file-name">${file.name}</span>
+                <button class="file-remove" data-index="${index}">
+                    <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <line x1="18" y1="6" x2="6" y2="18"/>
+                        <line x1="6" y1="6" x2="18" y2="18"/>
+                    </svg>
+                </button>
+            </div>
+        `).join('');
+
+        const addMoreHtml = `
+            <button class="add-more-btn" id="addMoreBtn">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="12" y1="5" x2="12" y2="19"/>
+                    <line x1="5" y1="12" x2="19" y2="12"/>
+                </svg>
+                添加更多文件
+            </button>
+        `;
+
+        elements.selectedFilesList.innerHTML = filesHtml + addMoreHtml;
+
+        // Attach remove listeners
+        elements.selectedFilesList.querySelectorAll('.file-remove').forEach(btn => {
+            btn.addEventListener('click', (e) => {
+                e.stopPropagation();
+                const index = parseInt(btn.dataset.index);
+                handleFileRemove(index);
+            });
+        });
+
+        // Attach add more listener
+        const addMoreBtn = elements.selectedFilesList.querySelector('#addMoreBtn');
+        if (addMoreBtn) {
+            addMoreBtn.addEventListener('click', () => elements.fileInput.click());
+        }
+
+        elements.selectedFiles.style.display = 'block';
         elements.dropZone.style.display = 'none';
     } else {
-        elements.selectedFile.style.display = 'none';
+        elements.selectedFiles.style.display = 'none';
         elements.dropZone.style.display = 'block';
     }
     updateSubmitButton();
@@ -331,45 +377,66 @@ function handleFileDrop(e) {
 
     const files = e.dataTransfer?.files;
     if (files && files.length > 0) {
-        state.selectedFile = files[0];
-        showSelectedFile();
+        state.selectedFiles = [...state.selectedFiles, ...Array.from(files)];
+        showSelectedFiles();
     }
 }
 
 function handleFileSelect(e) {
     const files = e.target.files;
     if (files && files.length > 0) {
-        state.selectedFile = files[0];
-        showSelectedFile();
+        state.selectedFiles = [...state.selectedFiles, ...Array.from(files)];
+        showSelectedFiles();
     }
+    // Reset input so the same file can be selected again
+    elements.fileInput.value = '';
 }
 
-function handleFileRemove() {
-    state.selectedFile = null;
-    elements.fileInput.value = '';
-    showSelectedFile();
+function handleFileRemove(index) {
+    state.selectedFiles.splice(index, 1);
+    if (state.selectedFiles.length === 0) {
+        elements.fileInput.value = '';
+    }
+    showSelectedFiles();
 }
 
 async function handleSubmit() {
-    if (!state.selectedFile || state.selectedMetrics.size === 0) return;
+    if (state.selectedFiles.length === 0 || state.selectedMetrics.size === 0) return;
 
     setSubmitting(true);
-    const uploadedFilename = state.selectedFile.name;
+    const filesToUpload = [...state.selectedFiles];
+    const metrics = Array.from(state.selectedMetrics);
+
+    // Reset form immediately
+    state.selectedFiles = [];
+    elements.fileInput.value = '';
+    showSelectedFiles();
 
     try {
-        const result = await submitJob(state.selectedFile, Array.from(state.selectedMetrics));
+        // Submit all files in parallel
+        const results = await Promise.all(
+            filesToUpload.map(async (file) => {
+                try {
+                    const result = await submitJob(file, metrics);
+                    // Store the filename for this job (for display before processing completes)
+                    state.jobFilenames.set(result.job_id, file.name);
+                    return { success: true, job_id: result.job_id };
+                } catch (error) {
+                    return { success: false, filename: file.name, error: error.message };
+                }
+            })
+        );
 
-        // Store the filename for this job (for display before processing completes)
-        state.jobFilenames.set(result.job_id, uploadedFilename);
+        // Report any failures
+        const failures = results.filter(r => !r.success);
+        if (failures.length > 0) {
+            const failedNames = failures.map(f => f.filename).join(', ');
+            alert(`部分文件上传失败: ${failedNames}`);
+        }
 
-        // Reset form
-        state.selectedFile = null;
-        elements.fileInput.value = '';
-        showSelectedFile();
-
-        // Reload jobs and start polling new job
+        // Reload jobs and start polling for successful uploads
         await loadJobs();
-        startPollingJob(result.job_id);
+        results.filter(r => r.success).forEach(r => startPollingJob(r.job_id));
     } catch (error) {
         console.error('Submit failed:', error);
         alert(`上传失败: ${error.message}`);
@@ -418,7 +485,6 @@ async function init() {
 
     // File input
     elements.fileInput.addEventListener('change', handleFileSelect);
-    elements.fileRemove.addEventListener('click', handleFileRemove);
 
     // Submit
     elements.submitBtn.addEventListener('click', handleSubmit);
