@@ -24,6 +24,11 @@ def get_metric_obj(db: Session, metric: str) -> Metric:
     return db_metric
 
 
+def sort_master_weight_name(master: str) -> tuple[int, str]:
+    '''Sort master weight name by weight value and then name.'''
+    return (get_font_weight_value(master), master.lower().strip())
+
+
 @router.get('')
 async def list_available_metrics(db: SessionDep):
     '''List all available metrics.'''
@@ -92,13 +97,14 @@ async def get_typeface_fonts(db: SessionDep, metric: str, typeface_id: int, char
 
         df = load_metric_data(fm, charset=charset)
         masters = df['master'].unique().tolist()
-        masters = sorted(masters, key=get_font_weight_value, reverse=True)
+        masters = sorted(masters, key=sort_master_weight_name, reverse=True)
 
         fonts.append({
             'id': fm.font.id,
             'name': fm.font.name,
             'masters': masters,
         })
+    fonts = sorted(fonts, key=lambda f: sort_master_weight_name(f['masters'][0]), reverse=True)
 
     return {
         'metric': metric,
@@ -133,7 +139,7 @@ async def get_font_metric_data(db: SessionDep, metric: str, typeface_id: int, fo
 
     # Filter by master if specified
     masters = df['master'].unique().tolist()
-    masters = sorted(masters, key=get_font_weight_value, reverse=True)
+    masters = sorted(masters, key=sort_master_weight_name, reverse=True)
 
     if master and master in masters:
         df = df[df['master'] == master]

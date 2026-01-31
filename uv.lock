@@ -268,7 +268,7 @@ wheels = [
 [[package]]
 name = "fontbench"
 version = "0.1.0"
-source = { git = "https://github.com/georgeyjm/fontbench.git#e764b733b0599c9ab5e35ccca1b6998e02f6e396" }
+source = { git = "https://github.com/georgeyjm/fontbench.git#e42f20cca8175a6c0632d91add3191cafdbad9ac" }
 dependencies = [
     { name = "fonttools" },
     { name = "glyphslib" },
